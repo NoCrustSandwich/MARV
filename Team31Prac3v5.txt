@@ -1,0 +1,2609 @@
+; MARV EMK310 2024 Group 31
+; Oleksandr Nekrashevych(20422203),  Farai MHLANGA 20582511,Jemaine ,Rijn van Zyl(20663952)
+			    
+			 
+;#############################################################################
+; CONFIG AND INITIALIZATION
+;#############################################################################
+; //<editor-fold defaultstate="collapsed">		    
+			    
+			    
+;-----------------------------------------------------------------------------
+; Config
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+
+TITLE	    "MARV"
+				  
+; uP/uC used 
+PROCESSOR   18F45K22
+
+
+; PIC18F45K22 Configuration Bit Settings
+
+; Assembly source line config statements
+
+; CONFIG1H
+  CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
+  CONFIG  PLLCFG = OFF          ; 4X PLL Enable (Oscillator used directly)
+  CONFIG  PRICLKEN = ON         ; Primary clock enable bit (Primary clock is always enabled)
+  CONFIG  FCMEN = OFF           ; Fail-Safe Clock Monitor Enable bit (Fail-Safe Clock Monitor disabled)
+  CONFIG  IESO = OFF            ; Internal/External Oscillator Switchover bit (Oscillator Switchover mode disabled)
+
+; CONFIG2L
+  CONFIG  PWRTEN = OFF          ; Power-up Timer Enable bit (Power up timer disabled)
+  CONFIG  BOREN = SBORDIS       ; Brown-out Reset Enable bits (Brown-out Reset enabled in hardware only (SBOREN is disabled))
+  CONFIG  BORV = 190            ; Brown Out Reset Voltage bits (VBOR set to 1.90 V nominal)
+
+; CONFIG2H
+  CONFIG  WDTEN = OFF           ; Watchdog Timer Enable bits (Watch dog timer is always disabled. SWDTEN has no effect.)
+  CONFIG  WDTPS = 32768         ; Watchdog Timer Postscale Select bits (1:32768)
+
+; CONFIG3H
+  CONFIG  CCP2MX = PORTC1       ; CCP2 MUX bit (CCP2 input/output is multiplexed with RC1)
+  CONFIG  PBADEN = ON           ; PORTB A/D Enable bit (PORTB<5:0> pins are configured as analog input channels on Reset)
+  CONFIG  CCP3MX = PORTB5       ; P3A/CCP3 Mux bit (P3A/CCP3 input/output is multiplexed with RB5)
+  CONFIG  HFOFST = ON           ; HFINTOSC Fast Start-up (HFINTOSC output and ready status are not delayed by the oscillator stable status)
+  CONFIG  T3CMX = PORTC0        ; Timer3 Clock input mux bit (T3CKI is on RC0)
+  CONFIG  P2BMX = PORTD2        ; ECCP2 B output mux bit (P2B is on RD2)
+  CONFIG  MCLRE = EXTMCLR       ; MCLR Pin Enable bit (MCLR pin enabled, RE3 input pin disabled)
+
+; CONFIG4L
+  CONFIG  STVREN = ON           ; Stack Full/Underflow Reset Enable bit (Stack full/underflow will cause Reset)
+  CONFIG  LVP = ON              ; Single-Supply ICSP Enable bit (Single-Supply ICSP enabled if MCLRE is also 1)
+  CONFIG  XINST = OFF           ; Extended Instruction Set Enable bit (Instruction set extension and Indexed Addressing mode disabled (Legacy mode))
+
+; CONFIG5L
+  CONFIG  CP0 = OFF             ; Code Protection Block 0 (Block 0 (000800-001FFFh) not code-protected)
+  CONFIG  CP1 = OFF             ; Code Protection Block 1 (Block 1 (002000-003FFFh) not code-protected)
+  CONFIG  CP2 = OFF             ; Code Protection Block 2 (Block 2 (004000-005FFFh) not code-protected)
+  CONFIG  CP3 = OFF             ; Code Protection Block 3 (Block 3 (006000-007FFFh) not code-protected)
+
+; CONFIG5H
+  CONFIG  CPB = OFF             ; Boot Block Code Protection bit (Boot block (000000-0007FFh) not code-protected)
+  CONFIG  CPD = OFF             ; Data EEPROM Code Protection bit (Data EEPROM not code-protected)
+
+; CONFIG6L
+  CONFIG  WRT0 = OFF            ; Write Protection Block 0 (Block 0 (000800-001FFFh) not write-protected)
+  CONFIG  WRT1 = OFF            ; Write Protection Block 1 (Block 1 (002000-003FFFh) not write-protected)
+  CONFIG  WRT2 = OFF            ; Write Protection Block 2 (Block 2 (004000-005FFFh) not write-protected)
+  CONFIG  WRT3 = OFF            ; Write Protection Block 3 (Block 3 (006000-007FFFh) not write-protected)
+
+; CONFIG6H
+  CONFIG  WRTC = OFF            ; Configuration Register Write Protection bit (Configuration registers (300000-3000FFh) not write-protected)
+  CONFIG  WRTB = OFF            ; Boot Block Write Protection bit (Boot Block (000000-0007FFh) not write-protected)
+  CONFIG  WRTD = OFF            ; Data EEPROM Write Protection bit (Data EEPROM not write-protected)
+
+; CONFIG7L
+  CONFIG  EBTR0 = OFF           ; Table Read Protection Block 0 (Block 0 (000800-001FFFh) not protected from table reads executed in other blocks)
+  CONFIG  EBTR1 = OFF           ; Table Read Protection Block 1 (Block 1 (002000-003FFFh) not protected from table reads executed in other blocks)
+  CONFIG  EBTR2 = OFF           ; Table Read Protection Block 2 (Block 2 (004000-005FFFh) not protected from table reads executed in other blocks)
+  CONFIG  EBTR3 = OFF           ; Table Read Protection Block 3 (Block 3 (006000-007FFFh) not protected from table reads executed in other blocks)
+
+; CONFIG7H
+  CONFIG  EBTRB = OFF           ; Boot Block Table Read Protection bit (Boot Block (000000-0007FFh) not protected from table reads executed in other blocks)    
+    
+    
+; Include files for uC/uP			    
+#include    <xc.inc>
+#include    "pic18f45k22.inc"
+
+; Defines a program section for executable code that is located at a fixed, 
+; absolute address in memory that is not relocatable.
+PSECT code,abs		    
+
+
+
+
+; Sets starting adress at 0h
+ORG	0H		
+
+GOTO	INITIALIZATION
+
+; Interrupts starting address
+ORG	8H
+ORG	18H
+
+GOTO	ISR
+
+			    
+			    
+; //</editor-fold>
+
+			    			    
+;-----------------------------------------------------------------------------			    
+; Initialization
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+
+INITIALIZATION: 
+ 
+    
+; Sets Internal Clock Speed to 16MHz
+MOVLB	15
+BSF OSCCON,6,b
+BCF OSCCON,5,b
+BSF OSCCON,4,b
+ 
+    
+; Timer for 333ms delay
+MOVLW	00001000B
+MOVWF	T0CON,b
+    
+    
+; Clear Timer0 registers          
+CLRF	TMR0H,b            
+CLRF	TMR0L,b            
+    
+    
+; Timer2 for PWM motor control
+MOVLW	00000100B
+MOVWF	T2CON,b
+    
+    
+; Clear Timer2 registers              
+CLRF	TMR2,b 
+
+; Clears IF flag which will be used to track pwm 
+BCF	 PIR1,1,b 
+
+  
+    
+
+    
+    
+;Interrupt
+BSF INTCON,7,b	    ; Unmasks all global interrupts
+BCF INTCON,2,b	    ; Clears the timer interrupt bit
+BSF INTCON,4,b	    ; Enables the INT0 external interrupt for register dump 
+BCF INTCON,1,b	    ; Clears the external interrupt flag bit
+   
+
+BCF INTCON3,3,b	    ; DISABLES the INT1 external interrupt for Sensor Switching 
+BCF INTCON3,0,b	    ; Clears the external interruptflag bit
+    
+    
+; PORTA (ANALOG INPUT PINS, for SENSORS ADC READINGS and 
+; DIGITAL INPUT PINS for STATE SWITCHING)
+CLRF	PORTA,b
+MOVLW	00001111B
+MOVWF	ANSELA,b
+MOVLW	11111111B
+MOVWF	TRISA,b
+
+    
+; PORTB (DIGITAL OUTPUT PORT, for UNIT TESTING SSD AND BLINK LED)
+CLRF	PORTB,b
+MOVLW	00000000B
+MOVWF	ANSELB,b
+MOVLW	00000000B
+MOVWF	TRISB,b
+BCF	LATB,3,0
+    
+    
+; PORTC (PWM PORT, for MOTOR CONTROL, UART AND I2C)
+CLRF	PORTC,b
+CLRF	LATC,b    
+MOVLW	00000000B
+MOVWF	ANSELC,b
+MOVLW	11111000B
+MOVWF	TRISC,b
+
+    
+
+    
+; PORTD (DIGITAL OUTPUT PORT, for STATE SSD)
+CLRF	PORTD,b
+MOVLW	00000000B
+MOVWF	ANSELD,b
+MOVWF	TRISD,b
+  
+    
+; PORTE (DIGITAL OUTPUT PORT, for RGB LEDS)
+CLRF	PORTE,b
+MOVLW	00000000B
+MOVWF	ANSELE,b
+MOVWF	TRISE,b
+    
+    
+; ADC 
+MOVLW	00111000B
+MOVWF	ADCON2,b
+    
+    
+; Motor control using pwm 
+    
+; Sets CCP1 to PWM mode  
+BSF	CCP1CON,3,b
+BSF	CCP1CON,2,b
+BCF	CCP1CON,1,b
+BCF	CCP1CON,0,b
+
+; Sets CCP2 to PWM mode
+BSF	CCP2CON,3,b
+BSF	CCP2CON,2,b
+BCF	CCP2CON,1,b
+BCF	CCP2CON,0,b
+    
+;Sets timer2 as the CCP1 and CCP2 timer
+BCF	CCPTMRS0,4,b
+BCF	CCPTMRS0,3,b
+BCF	CCPTMRS0,1,b
+BCF	CCPTMRS0,0,b
+   
+; Turns off timer2 for pwm
+BCF	T2CON,2,b
+    
+ 
+    
+; VARIABLE DECLARATIONS
+    
+    
+; Delay
+COUNTER_37		EQU 0x2A		    ; Memory Location
+CLRF			COUNTER_37,a		    ; Clear Variable Register
+COUNTER_333		EQU 0x2B		    ; Memory Location
+CLRF			COUNTER_333,a		    ; Clear Variable Register
+COUNTER_BLINK		EQU 0x2C	    ; Memory Location
+CLRF			COUNTER_BLINK,a		    ; Clear Variable Register
+		
+; RGB Sensor Readings
+S0_RED_READING		EQU 0x2D	    
+CLRF			S0_RED_READING,a
+S1_RED_READING		EQU 0x2E	    
+CLRF			S1_RED_READING,a	
+S2_RED_READING		EQU 0x2F	    
+CLRF			S2_RED_READING,a
+		
+S0_GREEN_READING	EQU 0x30	    
+CLRF			S0_GREEN_READING,a
+S1_GREEN_READING	EQU 0x31	    
+CLRF			S1_GREEN_READING,a	
+S2_GREEN_READING	EQU 0x32	    
+CLRF			S2_GREEN_READING,a
+		
+S0_BLUE_READING		EQU 0x33	    
+CLRF			S0_BLUE_READING,a
+S1_BLUE_READING		EQU 0x34	    
+CLRF			S1_BLUE_READING,a	
+S2_BLUE_READING		EQU 0x35	    
+CLRF			S2_BLUE_READING,a
+	
+		
+; Sensor reading    
+S0_READING		EQU 0x36	    
+CLRF			S0_READING,a
+S1_READING		EQU 0x37	    
+CLRF			S1_READING,a
+S2_READING		EQU 0x38	    
+CLRF			S2_READING,a
+			
+	
+; Sensor Colour Detection
+; b7-5=Unused, b4=White, b3=Red, b2=Green, b1=Blue, b0=Black
+S0_COLOUR		EQU 0x39	    
+CLRF			S0_COLOUR,a
+S1_COLOUR		EQU 0x3A	    
+CLRF			S1_COLOUR,a
+S2_COLOUR		EQU 0x3B	    
+CLRF			S2_COLOUR,a
+		
+	
+; LLI
+; b7-5=Unused, b4=Left, b3=Right, b2=Straight, b1=Stop, b0=Error	
+LLI_OUTPUT		EQU 0x3C	    
+CLRF			LLI_OUTPUT,a
+		
+; Assumed Positive Flag
+APF			EQU 0x3D	    
+CLRF			APF,a
+			
+		
+;Sensor Colour High thresholds
+S0_RED_THRESH		EQU 0x3E
+CLRF			S0_RED_THRESH,a
+S1_RED_THRESH		EQU 0x3F
+CLRF			S1_RED_THRESH,a
+S2_RED_THRESH		EQU 0x40
+CLRF			S2_RED_THRESH,a
+		
+S0_GREEN_THRESH		EQU 0x41
+CLRF			S0_GREEN_THRESH,a
+S1_GREEN_THRESH		EQU 0x42
+CLRF			S1_GREEN_THRESH,a
+S2_GREEN_THRESH		EQU 0x43
+CLRF			S2_GREEN_THRESH,a
+		
+S0_BLUE_THRESH		EQU 0x44
+CLRF			S0_BLUE_THRESH,a
+S1_BLUE_THRESH		EQU 0x45
+CLRF			S1_BLUE_THRESH,a
+S2_BLUE_THRESH		EQU 0x46
+CLRF			S2_BLUE_THRESH,a
+		
+;Strobe colour registers
+; b7-3=Unused, b2=RED HIGH, b1=GREEN HIGH, b0=BLUE HIGH
+S0_STROBE_REG		EQU 0x47
+CLRF			S0_STROBE_REG,a
+S1_STROBE_REG		EQU 0x48
+CLRF			S1_STROBE_REG,a
+S2_STROBE_REG		EQU 0x49
+CLRF			S2_STROBE_REG,a
+
+		
+;Sensor Colour High thresholds on colour
+S0_RED_ON_RED_THRESH	    EQU 0x4A
+CLRF			    S0_RED_ON_RED_THRESH,a
+S1_RED_ON_RED_THRESH	    EQU 0x4B
+CLRF			    S1_RED_ON_RED_THRESH,a
+S2_RED_ON_RED_THRESH	    EQU 0x4C
+CLRF			    S2_RED_ON_RED_THRESH,a
+		
+S0_GREEN_ON_GREEN_THRESH    EQU 0x4D
+CLRF			    S0_GREEN_ON_GREEN_THRESH,a
+S1_GREEN_ON_GREEN_THRESH    EQU 0x4E
+CLRF			    S1_GREEN_ON_GREEN_THRESH,a
+S2_GREEN_ON_GREEN_THRESH    EQU 0x4F
+CLRF			    S2_GREEN_ON_GREEN_THRESH,a
+		
+S0_BLUE_ON_BLUE_THRESH	    EQU 0x50
+CLRF			    S0_BLUE_ON_BLUE_THRESH,a
+S1_BLUE_ON_BLUE_THRESH	    EQU 0x51
+CLRF			    S1_BLUE_ON_BLUE_THRESH,a
+S2_BLUE_ON_BLUE_THRESH	    EQU 0x52
+CLRF			    S2_BLUE_ON_BLUE_THRESH,a
+	    
+;Sensor Colour High thresholds on white
+S0_RED_ON_WHITE_THRESH	    EQU 0x53
+CLRF			    S0_RED_ON_WHITE_THRESH,a
+S1_RED_ON_WHITE_THRESH	    EQU 0x54
+CLRF			    S1_RED_ON_WHITE_THRESH,a
+S2_RED_ON_WHITE_THRESH	    EQU 0x55
+CLRF			    S2_RED_ON_WHITE_THRESH,a
+		
+S0_GREEN_ON_WHITE_THRESH    EQU 0x56
+CLRF			    S0_GREEN_ON_WHITE_THRESH,a
+S1_GREEN_ON_WHITE_THRESH    EQU 0x57
+CLRF			    S1_GREEN_ON_WHITE_THRESH,a
+S2_GREEN_ON_WHITE_THRESH    EQU 0x58
+CLRF			    S2_GREEN_ON_WHITE_THRESH,a
+		
+S0_BLUE_ON_WHITE_THRESH	    EQU 0x59
+CLRF			    S0_BLUE_ON_WHITE_THRESH,a
+S1_BLUE_ON_WHITE_THRESH	    EQU 0x5A
+CLRF			    S1_BLUE_ON_WHITE_THRESH,a
+S2_BLUE_ON_WHITE_THRESH	    EQU 0x5B
+CLRF			    S2_BLUE_ON_WHITE_THRESH,a
+	    
+; Capacitive touch reading register 
+CAP_TOUCH_READING	    EQU 0x5C
+CLRF			    CAP_TOUCH_READING,a	   
+	    
+
+; PWM motor control duty cycle registers
+LEFT_DUTY_CYCLE		    EQU 0x5D
+CLRF			    LEFT_DUTY_CYCLE,a
+
+RIGHT_DUTY_CYCLE	    EQU 0x5E
+CLRF			    RIGHT_DUTY_CYCLE,a
+	    
+STATE_CHANGE_REG	    EQU 0x5F
+CLRF			    STATE_CHANGE_REG,a
+		
+		
+; //</editor-fold>
+; //</editor-fold>
+
+
+;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+; IMPORTANT ADJUSTABLE CONSTANTS
+;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX	
+; //<editor-fold defaultstate="collapsed">
+	
+			
+; 12H = 0.35V
+		
+		
+; Sensor Threshold Ranges	    
+S0_RED_THRESH_RANGE	EQU 0x20
+MOVLW			5			; Adjust this value
+MOVWF			S0_RED_THRESH_RANGE,a
+	    
+S1_RED_THRESH_RANGE	EQU 0x21
+MOVLW			5			; Adjust this value
+MOVWF			S1_RED_THRESH_RANGE,a
+	    
+S2_RED_THRESH_RANGE	EQU 0x22
+MOVLW			5			; Adjust this value
+MOVWF			S2_RED_THRESH_RANGE,a
+		
+S0_GREEN_THRESH_RANGE	EQU 0x23
+MOVLW			5			; Adjust this value
+MOVWF			S0_GREEN_THRESH_RANGE,a
+	    
+S1_GREEN_THRESH_RANGE	EQU 0x24
+MOVLW			5			; Adjust this value
+MOVWF			S1_GREEN_THRESH_RANGE,a
+	    
+S2_GREEN_THRESH_RANGE	EQU 0x25
+MOVLW			5		; Adjust this value
+MOVWF			S2_GREEN_THRESH_RANGE,a
+		
+S0_BLUE_THRESH_RANGE	EQU 0x26
+MOVLW			5			; Adjust this value
+MOVWF			S0_BLUE_THRESH_RANGE,a
+	    
+S1_BLUE_THRESH_RANGE	EQU 0x27
+MOVLW			5			; Adjust this value
+MOVWF			S1_BLUE_THRESH_RANGE,a
+	    
+S2_BLUE_THRESH_RANGE	EQU 0x28
+MOVLW			5			; Adjust this value
+MOVWF			S2_BLUE_THRESH_RANGE,a
+	
+	    
+; Selected Race Colour
+; b7-5=Unused, b4=White, b3=Red, b2=Green, b1=Blue, b0=Black
+RACE_COLOUR		EQU 0x29	    
+MOVLW			00001000B	    ; Currently racing on red
+MOVWF			RACE_COLOUR,a
+		
+; Sensor Readings
+		
+; //</editor-fold>		
+
+	
+	
+	    
+	    
+;#############################################################################
+; Program Start/IDLE State	(State 0)
+;#############################################################################
+; //<editor-fold defaultstate="collapsed">
+
+TESTING:
+    
+    ;GOTO    SSD_DISPLAY_STATE_5
+    
+    ;GOTO    TESTING
+  
+MENU_STATE:
+   
+    ; PSEUDO-IDLE STATE, checks if port pins associated with states are not 0,
+    ; if so go into state if not skip state.
+    CALL    CLEAR_RGB_LEDS
+    ; Turns OFF timer2 for pwm
+    BCF	    T2CON,2,b
+    CALL    SSD_DISPLAY_STATE_0
+    
+    
+    ; menu code here
+    
+    
+    BTFSC   PORTA,4,b
+    GOTO    CHANGE_STATE
+      
+    
+    GOTO    MENU_STATE
+    
+; //</editor-fold>   
+
+
+
+    
+;#############################################################################
+; STATES
+;#############################################################################
+; //<editor-fold defaultstate="collapsed">		    
+
+
+;-----------------------------------------------------------------------------
+; CHANGE SLOGAN STATE			(State 1)
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+CHANGE_SLOGAN_STATE:
+   
+   CALL	    SSD_DISPLAY_STATE_1
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   
+   ;change slogan code here
+   
+   
+   GOTO	   MENU_STATE
+			    
+			    	    
+; //</editor-fold>    
+ 
+;-----------------------------------------------------------------------------
+; RACE COLOUR SELECT STATE		(State 2)
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+RACE_COLOUR_SELECT_STATE:
+    CALL    SSD_DISPLAY_STATE_2
+    
+WAIT_FOR_RACE_COLOUR:
+    BTFSS  PORTA,4,a 
+    BRA	   WAIT_FOR_RACE_COLOUR
+    
+    
+    
+    GOTO    MENU_STATE
+; //</editor-fold>     
+       
+   
+;-----------------------------------------------------------------------------
+; CALIBRATION STATE			(State 3)
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+CAL_STATE:
+   
+   CALL    SSD_DISPLAY_STATE_3
+   CALL	   WAIT_FOR_CAP_TOUCH
+   ; Executes calibration sequence and returns to IDLE_STATE
+   CALL	   CALIBRATE_SENSORS
+   GOTO	   MENU_STATE
+			    
+			    	    
+; //</editor-fold>
+   
+   
+;-----------------------------------------------------------------------------
+; RACE STATE				(State 4)
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+RACE_STATE:
+    ; Clears all unit testing LEDS
+    CALL    SSD_DISPLAY_STATE_4
+    CALL    CLEAR_UT_SSD
+    CALL    WAIT_FOR_CAP_TOUCH
+  
+    ; Turns ON timer2 for pwm
+    BSF	T2CON,2,b
+    
+    MOVLW   9
+    MOVWF   PR2,a
+    
+    
+RACE_LOOP:   
+    
+    ; Continually retrieves and displays latest sensor values and registers
+    CALL    UPDATE_CD
+    CALL    UPDATE_LLI
+    CALL    DISPLAY_CD
+    CALL    DISPLAY_LLI
+    CALL    UPDATE_MOTOR_CONTROL
+    
+    
+    
+    
+    CLRF    TMR2,a
+    
+    BTFSC   PORTA,4,b
+    GOTO    CHANGE_STATE
+    
+    
+    BRA	    RACE_LOOP
+  	    
+; //</editor-fold>   
+
+;-----------------------------------------------------------------------------
+; TIME STATE				(State 5)
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+TIME_STATE:
+    
+    ; Clears all unit testing LEDS
+    CALL    SSD_DISPLAY_STATE_5
+    
+    
+    
+TIME_STATE_LOOP:  
+    
+    
+    ; DISPLAY TIME LOOP
+    
+    BTFSC   PORTA,4,b
+    GOTO    CHANGE_STATE
+    
+    
+    
+    BRA	    TIME_STATE_LOOP
+  	    
+; //</editor-fold>      
+
+; //</editor-fold> 
+    
+
+ 
+;############################################################################
+; CHANGE STATE
+;############################################################################
+; //<editor-fold defaultstate="collapsed">
+CHANGE_STATE:
+    
+    CLRF    STATE_CHANGE_REG,a
+    
+    
+    BTFSC   PORTA,7,a
+    BSF	    STATE_CHANGE_REG,7,a
+    
+    BTFSC   PORTA,6,a
+    BSF	    STATE_CHANGE_REG,6,a
+    
+    BTFSC   PORTA,5,a
+    BSF	    STATE_CHANGE_REG,5,a
+    
+    
+    
+    
+    
+    
+STATE_1_CHECK:    
+    MOVLW   00100000B
+    CPFSEQ  STATE_CHANGE_REG,a
+    BRA	    STATE_2_CHECK
+    GOTO    CHANGE_SLOGAN_STATE
+
+STATE_2_CHECK:
+    MOVLW   01000000B
+    CPFSEQ  STATE_CHANGE_REG,a
+    BRA	    STATE_3_CHECK
+    GOTO    RACE_COLOUR_SELECT_STATE
+    
+STATE_3_CHECK:
+    MOVLW   01100000B
+    CPFSEQ  STATE_CHANGE_REG,a
+    BRA	    STATE_4_CHECK
+    GOTO    CAL_STATE
+    
+STATE_4_CHECK:
+    MOVLW   10000000B
+    CPFSEQ  STATE_CHANGE_REG,a
+    BRA	    STATE_5_CHECK
+    GOTO    RACE_STATE
+
+STATE_5_CHECK:
+    MOVLW   10100000B
+    CPFSEQ  STATE_CHANGE_REG,a
+    BRA	    STATE_CHECK_END
+    GOTO    TIME_STATE
+    
+STATE_CHECK_END:   
+    
+    GOTO    MENU_STATE
+    
+    
+    
+; //</editor-fold>    
+    
+;#############################################################################
+; INTERRUPTS
+;#############################################################################   
+; //<editor-fold defaultstate="collapsed">
+   
+   
+;-----------------------------------------------------------------------------
+; Interrupt Service Routine
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+ISR:
+    
+    RETFIE
+; //</editor-fold>
+; //</editor-fold>
+       
+;#############################################################################
+; CAPACITIVE TOUCH
+;#############################################################################   
+; //<editor-fold defaultstate="collapsed">
+WAIT_FOR_CAP_TOUCH:
+    
+    CALL    GET_CAP_TOUCH
+    
+    MOVLW   25
+    CPFSGT  CAP_TOUCH_READING,a
+    BRA	    WAIT_FOR_CAP_TOUCH
+    
+    
+    RETURN
+    
+    
+    
+   
+
+; //</editor-fold>        
+    
+    
+    
+    
+    
+;############################################################################
+; 3HZ BLINKING LED
+;############################################################################
+; //<editor-fold defaultstate="collapsed">
+
+BLINK_LED:
+    
+    ; *Blinking frequency is 3Hz, ie. blinks 3 times per second
+    ; *Assumes use of PORTB, pin RB6
+    
+    MOVLW   3
+    MOVWF   COUNTER_BLINK,a
+    
+BLINK_LED_POLL:
+    
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+    
+    
+    CALL    BLINK_LED_ON
+    
+    ; In the simulator, this creates a 333_delay
+    CALL    DELAY_333
+    
+    ;THESE NEED TO BE REPEATED FOR REALITY
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    
+    CALL    BLINK_LED_OFF
+    
+    
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+   CALL	    DELAY_333
+    
+    DECFSZ  COUNTER_BLINK,a
+    BRA	    BLINK_LED_POLL
+    
+    RETURN
+; //</editor-fold>       
+      
+;#############################################################################
+; DELAY
+;#############################################################################    
+; //<editor-fold defaultstate="collapsed">
+   
+   
+;-----------------------------------------------------------------------------
+; 1ms DELAY
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DELAY_1:
+   
+    ; *Assuming 16MHz internal osscilator
+    
+    
+    ; Inputs the 16bit register value representing a 1ms delay 
+    MOVLW   11111111B
+    MOVWF   TMR0H,b
+    MOVLW   00010100B
+    MOVWF   TMR0L,b
+    
+    ; Starts the timer
+    BSF	    T0CON,7,b
+    
+    
+DELAY_1_POLL:		; Polls until timer0 overflow flag bit is set
+    BTFSS   INTCON,2,b
+    BRA	    DELAY_1_POLL
+    
+    ; Turn off timer, and clear the overflow flag bit
+    BCF	    T0CON,7,b
+    BCF	    INTCON,2,b
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; 37ms DELAY
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DELAY_37:
+    
+    ; Counter to repeat 1ms delay
+    MOVLW   37
+    MOVWF   COUNTER_37,a
+    
+DELAY_37_POLL:
+    CALL    DELAY_1
+    DECFSZ  COUNTER_37,a
+    BRA	    DELAY_37_POLL
+    
+    RETURN
+; //</editor-fold>
+  
+    
+;-----------------------------------------------------------------------------
+; 333ms DELAY
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DELAY_333:
+    
+    ; Counter to repeat 37ms delay
+    MOVLW   9
+    MOVWF   COUNTER_333,a
+    
+DELAY_333_POLL:
+    CALL    DELAY_37
+    DECFSZ  COUNTER_333,a
+    BRA	    DELAY_333_POLL
+    
+    RETURN
+    
+; //</editor-fold>
+; //</editor-fold>  
+    
+       
+    
+    
+    
+;#############################################################################
+; ANALOG TO DIGITAL CONVERSION (ADC) - CHANNEL SETUP
+;#############################################################################   
+; //<editor-fold defaultstate="collapsed">
+   
+   
+;-----------------------------------------------------------------------------
+; SET ADC CHANNEL 0
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SET_ADC_CH0:
+   
+    ; Sets ADC to channel 0 for use in PORTA RA0 and turns on ADC
+    MOVLB   15
+    MOVLW   00000001B
+    MOVWF   ADCON0,b
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; SET ADC CHANNEL 1
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SET_ADC_CH1:
+   
+    ; Sets ADC to channel 1 for use in PORTA RA1 and turns on ADC
+    MOVLB   15
+    MOVLW   00000101B
+    MOVWF   ADCON0,b
+    
+    RETURN
+; //</editor-fold>
+    
+
+;-----------------------------------------------------------------------------
+; SET ADC CHANNEL 2
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SET_ADC_CH2:
+   
+    ; Sets ADC to channel 2 for use in PORTA RA2 and turns on ADC
+    MOVLB   15
+    MOVLW   00001001B
+    MOVWF   ADCON0,b
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; SET ADC CHANNEL 3
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SET_ADC_CH3:
+   
+    ; Sets ADC to channel 2 for use in PORTA RA2 and turns on ADC
+    MOVLB   15
+    MOVLW   00001101B
+    MOVWF   ADCON0,b
+    
+    RETURN
+; //</editor-fold>
+; //</editor-fold>  
+
+    
+    
+    
+    
+;#############################################################################
+; SENSOR READINGS
+;#############################################################################
+; //<editor-fold defaultstate="collapsed">
+    
+;-----------------------------------------------------------------------------
+; GET LATEST SENSOR READINGS
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_SENSOR_READINGS:
+   
+    CALL    GET_S0
+    CALL    GET_S1
+    CALL    GET_S2
+
+    RETURN
+; //</editor-fold> 
+    
+;-----------------------------------------------------------------------------
+; SENSOR 0 READING
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_S0:
+   
+    ; *Assumes left justified 10-bit ADC
+    
+    ; Retrieves the latest Sensor 0 ADC reading 
+    CALL    SET_ADC_CH0
+    MOVLB   15
+    BSF	    ADCON0,1,b				; Starts AD Conversion Cycle
+    
+ADC_POLL_S0:
+    BTFSC   ADCON0,1,b				; Polls until conversion is done
+    BRA	    ADC_POLL_S0
+    
+    MOVFF ADRESH,S0_READING			; Transfers converted reading to
+						; S0_Reading variable
+
+    RETURN
+; //</editor-fold> 
+    
+   
+;-----------------------------------------------------------------------------
+; SENSOR 1 READING
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_S1:
+   
+    ; *Assumes left justified 10-bit ADC
+    
+    ; Retrieves the latest Sensor 0 ADC reading 
+    CALL    SET_ADC_CH1
+    MOVLB   15
+    BSF	    ADCON0,1,b				; Starts AD Conversion Cycle
+    
+ADC_POLL_S1:
+    BTFSC   ADCON0,1,b				; Polls until conversion is done
+    BRA	    ADC_POLL_S1
+    
+    MOVFF ADRESH,S1_READING			; Transfers converted reading to
+						; S0_Reading variable
+
+    RETURN
+; //</editor-fold> 
+    
+
+;-----------------------------------------------------------------------------
+; SENSOR 2 READING
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_S2:
+   
+    ; *Assumes left justified 10-bit ADC
+    
+    ; Retrieves the latest Sensor 0 ADC reading 
+    CALL    SET_ADC_CH2
+    MOVLB   15
+    BSF	    ADCON0,1,b				; Starts AD Conversion Cycle
+    
+ADC_POLL_S2:
+    BTFSC   ADCON0,1,b				; Polls until conversion is done
+    BRA	    ADC_POLL_S2
+    
+    MOVFF ADRESH,S2_READING			; Transfers converted reading to
+						; S0_Reading variable
+
+    RETURN
+; //</editor-fold> 
+    
+;-----------------------------------------------------------------------------
+; CAP TOUCH READING
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_CAP_TOUCH:
+   
+    ; *Assumes left justified 10-bit ADC
+    
+    ; Retrieves the latest Sensor 0 ADC reading 
+    CALL    SET_ADC_CH3
+    MOVLB   15
+    BSF	    ADCON0,1,b				; Starts AD Conversion Cycle
+    
+ADC_POLL_CAP_TOUCH:
+    BTFSC   ADCON0,1,b				; Polls until conversion is done
+    BRA	    ADC_POLL_CAP_TOUCH
+    
+    MOVFF ADRESH,CAP_TOUCH_READING			; Transfers converted reading to
+						; S0_Reading variable
+
+    RETURN
+; //</editor-fold>     
+    
+; //</editor-fold>  
+    
+;#############################################################################
+; THRESHOLD READINGS
+;#############################################################################
+; //<editor-fold defaultstate="collapsed">
+    
+;-----------------------------------------------------------------------------
+; Get Thresholds on red
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_THRESH_RED_ON_RED:
+   
+    ; *Assumes sensor is on red
+    
+    ; Retrieves and stores readings
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_RED_ON_RED_THRESH
+    MOVFF   S1_READING,S1_RED_ON_RED_THRESH
+    MOVFF   S2_READING,S2_RED_ON_RED_THRESH
+   
+
+    RETURN
+; //</editor-fold> 
+    
+
+;-----------------------------------------------------------------------------
+; Get Thresholds on green
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_THRESH_GREEN_ON_GREEN:
+   
+    ; *Assumes sensor is on green
+    
+    ; Stores readings
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_GREEN_ON_GREEN_THRESH
+    MOVFF   S1_READING,S1_GREEN_ON_GREEN_THRESH
+    MOVFF   S2_READING,S2_GREEN_ON_GREEN_THRESH
+
+    RETURN
+; //</editor-fold> 
+    
+    
+;-----------------------------------------------------------------------------
+; Get Thresholds on blue
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_THRESH_BLUE_ON_BLUE:
+   
+    ; *Assumes sensor is on blue
+    
+    ; Stores readings
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_BLUE_ON_BLUE_THRESH
+    MOVFF   S1_READING,S1_BLUE_ON_BLUE_THRESH
+    MOVFF   S2_READING,S2_BLUE_ON_BLUE_THRESH
+
+    RETURN
+; //</editor-fold> 
+    
+    
+;-----------------------------------------------------------------------------
+; Get Thresholds on white
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_THRESH_BLUE_ON_WHITE:
+   
+    ; *Assumes sensor is on white
+    
+    ; Stores readings
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_BLUE_ON_WHITE_THRESH
+    MOVFF   S1_READING,S1_BLUE_ON_WHITE_THRESH
+    MOVFF   S2_READING,S2_BLUE_ON_WHITE_THRESH
+
+    RETURN
+    
+GET_THRESH_GREEN_ON_WHITE:
+   
+    ; *Assumes sensor is on white
+    
+    ; Stores readings
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_GREEN_ON_WHITE_THRESH
+    MOVFF   S1_READING,S1_GREEN_ON_WHITE_THRESH
+    MOVFF   S2_READING,S2_GREEN_ON_WHITE_THRESH
+
+    RETURN    
+    
+GET_THRESH_RED_ON_WHITE:
+   
+    ; *Assumes sensor is white
+    
+    ; Stores readings
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_RED_ON_WHITE_THRESH
+    MOVFF   S1_READING,S1_RED_ON_WHITE_THRESH
+    MOVFF   S2_READING,S2_RED_ON_WHITE_THRESH
+
+    RETURN
+ 
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Decide Thresholds
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DECIDE_THRESHOLDS:
+   
+    ; Checks whether red_on_red or red_on_white is smaller and sets that as the 
+    ; threshold value for sensor 0
+    MOVFF   S0_RED_ON_RED_THRESH, WREG
+    
+    CPFSLT  S0_RED_ON_WHITE_THRESH,b
+    BRA	    D_RED_0
+    MOVFF   S0_RED_ON_WHITE_THRESH, S0_RED_THRESH
+    BRA	    D_RED_END_0
+    
+D_RED_0:
+    MOVFF   S0_RED_ON_RED_THRESH, S0_RED_THRESH
+D_RED_END_0: 
+    
+    
+    ; Checks whether red_on_red or red_on_white is smaller and sets that as the 
+    ; threshold value for sensor 1
+    MOVFF   S1_RED_ON_RED_THRESH, WREG
+    
+    CPFSLT  S1_RED_ON_WHITE_THRESH,b
+    BRA	    D_RED_1
+    MOVFF   S1_RED_ON_WHITE_THRESH, S1_RED_THRESH
+    BRA	    D_RED_END_1
+    
+D_RED_1:
+    MOVFF   S1_RED_ON_RED_THRESH, S1_RED_THRESH
+D_RED_END_1: 
+    
+    
+    ; Checks whether red_on_red or red_on_white is smaller and sets that as the 
+    ; threshold value for sensor 1
+    MOVFF   S2_RED_ON_RED_THRESH, WREG
+    
+    CPFSLT  S2_RED_ON_WHITE_THRESH,a
+    BRA	    D_RED_2
+    MOVFF   S2_RED_ON_WHITE_THRESH, S2_RED_THRESH
+    BRA	    D_RED_END_2
+    
+D_RED_2:
+    MOVFF   S2_RED_ON_RED_THRESH, S2_RED_THRESH
+D_RED_END_2: 
+    
+    
+
+    ; Checks whether blue_on_blue or blue_on_white is smaller and sets that as the 
+    ; threshold value for sensor 0
+    MOVFF   S0_BLUE_ON_BLUE_THRESH, WREG
+    
+    CPFSLT  S0_BLUE_ON_WHITE_THRESH,a
+    BRA	    D_BLUE_0
+    MOVFF   S0_BLUE_ON_WHITE_THRESH, S0_BLUE_THRESH
+    BRA	    D_BLUE_END_0
+    
+D_BLUE_0:
+    MOVFF   S0_BLUE_ON_BLUE_THRESH, S0_BLUE_THRESH
+D_BLUE_END_0: 
+    
+    
+    ; Checks whether blue_on_blue or blue_on_white is smaller and sets that as the 
+    ; threshold value for sensor 1
+    MOVFF   S1_BLUE_ON_BLUE_THRESH, WREG
+    
+    CPFSLT  S1_BLUE_ON_WHITE_THRESH,a
+    BRA	    D_BLUE_1
+    MOVFF   S1_BLUE_ON_WHITE_THRESH, S1_BLUE_THRESH
+    BRA	    D_BLUE_END_1
+    
+D_BLUE_1:
+    MOVFF   S1_BLUE_ON_BLUE_THRESH, S1_BLUE_THRESH
+D_BLUE_END_1:
+    
+    
+    ; Checks whether blue_on_blue or blue_on_white is smaller and sets that as the 
+    ; threshold value for sensor 2
+    MOVFF   S2_BLUE_ON_BLUE_THRESH, WREG
+    
+    CPFSLT  S2_BLUE_ON_WHITE_THRESH,a
+    BRA	    D_BLUE_2
+    MOVFF   S2_BLUE_ON_WHITE_THRESH, S2_BLUE_THRESH
+    BRA	    D_BLUE_END_2
+    
+D_BLUE_2:
+    MOVFF   S2_BLUE_ON_BLUE_THRESH, S2_BLUE_THRESH
+D_BLUE_END_2:
+    
+
+    
+    ; Checks whether green_on_green or green_on_white is smaller and sets that 
+    ; as the threshold value for sensor 0
+    MOVFF   S0_GREEN_ON_GREEN_THRESH, WREG
+    
+    CPFSLT  S0_GREEN_ON_WHITE_THRESH,a
+    BRA	    D_GREEN_0
+    MOVFF   S0_GREEN_ON_WHITE_THRESH, S0_GREEN_THRESH
+    BRA	    D_GREEN_END_0
+    
+D_GREEN_0:
+    MOVFF   S0_GREEN_ON_GREEN_THRESH, S0_GREEN_THRESH
+D_GREEN_END_0: 
+    
+    
+    ; Checks whether green_on_green or green_on_white is smaller and sets that 
+    ; as the threshold value for sensor 0
+    MOVFF   S1_GREEN_ON_GREEN_THRESH, WREG
+    
+    CPFSLT  S1_GREEN_ON_WHITE_THRESH,a
+    BRA	    D_GREEN_1
+    MOVFF   S1_GREEN_ON_WHITE_THRESH, S1_GREEN_THRESH
+    BRA	    D_GREEN_END_1
+    
+D_GREEN_1:
+    MOVFF   S1_GREEN_ON_GREEN_THRESH, S1_GREEN_THRESH
+D_GREEN_END_1: 
+    
+    
+    ; Checks whether green_on_green or green_on_white is smaller and sets that 
+    ; as the threshold value for sensor 0
+    MOVFF   S2_GREEN_ON_GREEN_THRESH, WREG
+    
+    CPFSLT  S2_GREEN_ON_WHITE_THRESH,a
+    BRA	    D_GREEN_2
+    MOVFF   S2_GREEN_ON_WHITE_THRESH, S2_GREEN_THRESH
+    BRA	    D_GREEN_END_2
+    
+D_GREEN_2:
+    MOVFF   S2_GREEN_ON_GREEN_THRESH, S2_GREEN_THRESH
+D_GREEN_END_2: 
+    
+    RETURN
+ 
+; //</editor-fold>
+ 
+; //</editor-fold>     
+    
+;#############################################################################
+; STROBE READINGS
+;#############################################################################     
+; //<editor-fold defaultstate="collapsed">
+     
+;-----------------------------------------------------------------------------
+; GET STROBE READINGS
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+GET_STROBE_READINGS:
+    
+    ; Strobes and stores sensor readings
+    
+    ; Turns RGB red and retrieves and stores readings
+    CALL    SET_RGB_LED_RED
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_RED_READING
+    MOVFF   S1_READING,S1_RED_READING
+    MOVFF   S2_READING,S2_RED_READING
+    
+    ; Turns RGB green and stores readings
+    CALL    SET_RGB_LED_GREEN
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_GREEN_READING
+    MOVFF   S1_READING,S1_GREEN_READING
+    MOVFF   S2_READING,S2_GREEN_READING
+    
+    ; Turns RGB blue and stores readings
+    CALL    SET_RGB_LED_BLUE
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_SENSOR_READINGS
+    MOVFF   S0_READING,S0_BLUE_READING
+    MOVFF   S1_READING,S1_BLUE_READING
+    MOVFF   S2_READING,S2_BLUE_READING
+    
+    
+    CALL    CLEAR_RGB_LEDS
+    
+    RETURN
+; //</editor-fold> 
+; //</editor-fold>       
+    
+    
+   
+    
+    
+;#############################################################################
+; SENSOR COLOUR THRESHOLD CALCULATIONS
+;#############################################################################    
+; //<editor-fold defaultstate="collapsed">
+   
+;-----------------------------------------------------------------------------
+; Update Colour Thresholds
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+    
+UPDATE_THRESH_RANGE:
+    
+    ; *Assumes threshold readings have already been taken
+    
+    ; Decreases the value where the theshold by the range value
+    MOVFF   S0_RED_THRESH_RANGE,WREG
+    SUBWF   S0_RED_THRESH,F,a
+    MOVFF   S0_GREEN_THRESH_RANGE,WREG
+    SUBWF   S0_GREEN_THRESH,F,a
+    MOVFF   S0_BLUE_THRESH_RANGE,WREG
+    SUBWF   S0_BLUE_THRESH,F,a
+    
+    MOVFF   S1_RED_THRESH_RANGE,WREG
+    SUBWF   S1_RED_THRESH,F,a
+    MOVFF   S1_GREEN_THRESH_RANGE,WREG
+    SUBWF   S1_GREEN_THRESH,F,a
+    MOVFF   S1_BLUE_THRESH_RANGE,WREG
+    SUBWF   S1_BLUE_THRESH,F,a
+    
+    MOVFF   S2_RED_THRESH_RANGE,WREG
+    SUBWF   S2_RED_THRESH,F,a
+    MOVFF   S2_GREEN_THRESH_RANGE,WREG
+    SUBWF   S2_GREEN_THRESH,F,a
+    MOVFF   S2_BLUE_THRESH_RANGE,WREG
+    SUBWF   S2_BLUE_THRESH,F,a
+    
+    RETURN
+; //</editor-fold>
+    
+    
+; //</editor-fold>  
+       
+ 
+    
+  
+       
+    
+    
+;#############################################################################
+; CALIBRATION 
+;############################################################################# 
+; //<editor-fold defaultstate="collapsed">
+   
+   
+;-----------------------------------------------------------------------------
+; Calibration Sequence
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+CALIBRATE_SENSORS:
+    
+    ; *Assumes the calibration order is RED->BLUE->GREEN->WHITE
+    
+    
+    ; Blinking led, and led corresponding to colour being calibrated turns on
+    ; and added delays for sensor positioning
+    CALL    SSD_DISPLAY_RED	
+    
+    CALL    DELAY_333
+    CALL    BLINK_LED	 
+    CALL    DELAY_333
+    
+    
+    ; Retrieves latest sensor readings, and updates voltage threshold of red
+    CALL    SET_RGB_LED_RED
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_THRESH_RED_ON_RED
+    
+    
+   
+    
+    ; Blinking led, and led corresponding to colour being calibrated turns on
+    ; and added delays for sensor positioning
+    CALL    SSD_DISPLAY_BLUE	
+    CALL    DELAY_333		
+    CALL    BLINK_LED		
+    CALL    DELAY_333
+    	
+    
+    ; Retrieves latest sensor readings, and updates voltage threshold of blue
+    CALL    SET_RGB_LED_BLUE
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_THRESH_BLUE_ON_BLUE
+    	
+    
+    
+    
+    ; Blinking led, and led corresponding to colour being calibrated turns on
+    ; and added delays for sensor positioning
+    CALL    SSD_DISPLAY_GREEN
+    
+    
+    CALL    DELAY_333		
+    CALL    BLINK_LED		
+    CALL    DELAY_333
+    	
+    
+    ; Retrieves latest sensor readings, and updates voltage threshold of green
+    CALL    SET_RGB_LED_GREEN
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_THRESH_GREEN_ON_GREEN
+    
+    	
+    
+    
+    ; Blinking led, and led corresponding to colour being calibrated turns on
+    ; and added delays for sensor positioning
+    CALL    SSD_DISPLAY_WHITE
+    
+    
+    CALL    DELAY_333		
+    CALL    BLINK_LED		
+    CALL    DELAY_333
+    	
+    
+    ; Retrieves latest sensor readings, and updates voltage threshold of green
+    CALL    SET_RGB_LED_GREEN
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_THRESH_GREEN_ON_WHITE
+    
+    
+    CALL    SET_RGB_LED_RED
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_THRESH_RED_ON_WHITE
+    
+    
+    CALL    SET_RGB_LED_BLUE
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    DELAY_333
+    CALL    GET_THRESH_BLUE_ON_WHITE
+    
+    CALL    CLEAR_RGB_LEDS	
+    
+    ; Decides the threshold based on white or on colour ie. red on red 
+    CALL    DECIDE_THRESHOLDS
+    
+    ; Adjusts the threshold ranges slightly
+    CALL    UPDATE_THRESH_RANGE
+    
+    RETURN
+; //</editor-fold>
+    
+
+    
+; //</editor-fold>      
+  
+ 
+    
+
+
+
+  
+    
+    
+
+
+
+    
+;#############################################################################
+; RGB LEDs
+;#############################################################################   
+; //<editor-fold defaultstate="collapsed">
+   
+;-----------------------------------------------------------------------------
+; Clear RGB Leds
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+CLEAR_RGB_LEDS:
+   
+    ; Turns off all RGB's LEDS
+    BSF	    PORTE,2,a
+    BSF	    PORTE,1,a
+    BSF	    PORTE,0,a
+    
+   
+    RETURN
+; //</editor-fold>
+        
+;-----------------------------------------------------------------------------
+; RGB_LEDs
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SET_RGB_LED_RED:
+   
+    ; Sets rgb led to display red
+    BSF	    PORTE,1,a
+    BSF	    PORTE,0,a
+    BCF	    PORTE,2,a
+    
+   
+    RETURN
+    
+SET_RGB_LED_GREEN:
+   
+    ; Sets rgb led to display green
+    BSF	    PORTE,2,a
+    BCF	    PORTE,1,a
+    BSF	    PORTE,0,a
+   
+    RETURN
+    
+SET_RGB_LED_BLUE:
+   
+    ; Sets rgb led to display green
+    BSF	    PORTE,2,a
+    BSF	    PORTE,1,a
+    BCF	    PORTE,0,a
+   
+    RETURN
+; //</editor-fold>    
+
+
+; //</editor-fold>    
+    
+;#############################################################################
+; SSD(SEVEN SEGMENT DISPLAY)
+;#############################################################################  
+; //<editor-fold defaultstate="collapsed">
+   
+;-----------------------------------------------------------------------------
+; CLEAR UNIT TESTING SSD
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+CLEAR_UT_SSD:
+   
+    ; Turns off SSD related to unit testing
+    BCF	    PORTB,7,a
+    BCF	    PORTB,6,a
+    BCF	    PORTB,5,a
+    BCF	    PORTB,4,a
+    BCF	    PORTB,3,a
+    BCF	    PORTB,2,a
+   
+    RETURN
+; //</editor-fold>    
+    
+    
+;-----------------------------------------------------------------------------
+; Clear STATE SSD
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+CLEAR_SSD:
+   
+    ; Turns off SSD
+    BCF	    PORTD,7,a
+    BCF	    PORTD,6,a
+    BCF	    PORTD,5,a
+    BCF	    PORTD,4,a
+    BCF	    PORTD,3,a
+    BCF	    PORTD,2,a
+    BCF	    PORTD,1,a
+  
+   
+    RETURN
+; //</editor-fold> 
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STATE 0
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STATE_0:
+   
+    ; SSD displays number "0"
+    BCF	    PORTD,7,a
+    BSF	    PORTD,6,a
+    BSF	    PORTD,5,a
+    BSF	    PORTD,4,a
+    BSF	    PORTD,3,a
+    BSF	    PORTD,2,a
+    BSF	    PORTD,1,a
+    
+   
+    RETURN
+; //</editor-fold> 
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STATE 1
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STATE_1:
+   
+    ; SSD displays number "0"
+    BCF	    PORTD,7,a
+    BCF	    PORTD,6,a
+    BCF	    PORTD,5,a
+    BCF	    PORTD,4,a
+    BSF	    PORTD,3,a
+    BSF	    PORTD,2,a
+    BCF	    PORTD,1,a
+    
+   
+    RETURN
+; //</editor-fold> 
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STATE 2
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STATE_2:
+   
+    ; SSD displays number "0"
+    BSF	    PORTD,7,a
+    BCF	    PORTD,6,a
+    BSF	    PORTD,5,a
+    BSF	    PORTD,4,a
+    BCF	    PORTD,3,a
+    BSF	    PORTD,2,a
+    BSF	    PORTD,1,a
+    
+   
+    RETURN
+; //</editor-fold> 
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STATE 3
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STATE_3:
+   
+    ; SSD displays number "0"
+    BSF	    PORTD,7,a
+    BCF	    PORTD,6,a
+    BCF	    PORTD,5,a
+    BSF	    PORTD,4,a
+    BSF	    PORTD,3,a
+    BSF	    PORTD,2,a
+    BSF	    PORTD,1,a
+    
+   
+    RETURN
+; //</editor-fold> 
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STATE 4
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STATE_4:
+   
+    ; SSD displays number "4"
+    BSF	    PORTD,7,a
+    BSF	    PORTD,6,a
+    BCF	    PORTD,5,a
+    BCF	    PORTD,4,a
+    BSF	    PORTD,3,a
+    BSF	    PORTD,2,a
+    BCF	    PORTD,1,a
+    
+   
+    RETURN
+; //</editor-fold> 
+    
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STATE 5
+;-----------------------------------------------------------------------------    
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STATE_5:
+   
+    ; SSD displays number "5"
+    BSF	    PORTD,7,a
+    BSF	    PORTD,6,a
+    BCF	    PORTD,5,a
+    BSF	    PORTD,4,a
+    BSF	    PORTD,3,a
+    BCF	    PORTD,2,a
+    BSF	    PORTD,1,a
+    
+   
+    RETURN
+; //</editor-fold>     
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY WHITE
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_WHITE:
+   
+    ; Sets white SSD pins    
+    BSF	    PORTB,5,a
+    BSF	    PORTB,4,a
+    BSF	    PORTB,3,a
+    
+    
+   
+    RETURN
+   
+; //</editor-fold>
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY BLACK
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_BLACK:
+   
+    ; Sets BLACK SSD pins
+    BCF	    PORTB,5,a
+    BCF	    PORTB,4,a
+    BCF	    PORTB,3,a
+   
+    RETURN
+   
+; //</editor-fold>
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY RED
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_RED:
+   
+    ; Sets RED SSD pins
+    BSF	    PORTB,5,a
+    BCF	    PORTB,4,a
+    BCF	    PORTB,3,a
+    
+    RETURN
+   
+; //</editor-fold>  
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY GREEN
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_GREEN:
+   
+    ; Sets GREEN SSD pins
+    BCF	    PORTB,5,a
+    BSF	    PORTB,4,a
+    BCF	    PORTB,3,a
+    
+    RETURN
+   
+; //</editor-fold> 
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY BLUE
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_BLUE:
+   
+    ; Sets BLUE SSD pins
+    BCF	    PORTB,5,a
+    BCF	    PORTB,4,a
+    BSF	    PORTB,3,a
+    
+    RETURN
+   
+; //</editor-fold>   
+    
+    
+;-----------------------------------------------------------------------------
+; BLINKING SSD LED
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+BLINK_LED_ON:
+   
+    ; Sets SSD pin to high
+    BSF	    PORTB,2,a
+   
+    RETURN
+    
+BLINK_LED_OFF:
+   
+    ; Sets SSD pin to low
+    BCF	    PORTB,2,a
+   
+    RETURN
+; //</editor-fold>
+    
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY ERROR
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_ERROR:
+   
+    ; Sets ERROR SSD pins
+    BSF	    PORTB,7,a
+    BSF	    PORTB,6,a
+    BSF	    PORTB,1,a
+   
+    RETURN
+   
+; //</editor-fold>
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STOP
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STOP:
+   
+    ; Sets STOP SSD pins
+    BCF	    PORTB,7,a
+    BCF	    PORTB,6,a
+    BCF	    PORTB,1,a
+   
+    RETURN
+   
+; //</editor-fold>
+
+;-----------------------------------------------------------------------------
+; SSD DISPLAY LEFT
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_LEFT:
+   
+    ; Sets RED SSD pins
+    BSF	    PORTB,7,a
+    BCF	    PORTB,6,a
+    BCF	    PORTB,1,a
+    
+    RETURN
+   
+; //</editor-fold>  
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY STRAIGHT
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_STRAIGHT:
+   
+    ; Sets GREEN SSD pins
+    BCF	    PORTB,7,a
+    BSF	    PORTB,6,a
+    BCF	    PORTB,1,a
+    
+    RETURN
+   
+; //</editor-fold> 
+    
+;-----------------------------------------------------------------------------
+; SSD DISPLAY RIGHT
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+SSD_DISPLAY_RIGHT:
+   
+    ; Sets BLUE SSD pins
+    BCF	    PORTB,7,a
+    BCF	    PORTB,6,a
+    BSF	    PORTB,1,a
+    
+    RETURN
+   
+; //</editor-fold>   
+   
+; //</editor-fold>  
+    
+;#############################################################################
+; UNIT TESTING
+;############################################################################# 
+; //<editor-fold defaultstate="collapsed">
+   
+     
+;-----------------------------------------------------------------------------
+; Displays LLI
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DISPLAY_LLI:
+    
+    ; *Assumes the LLI output register has the latest readings
+    
+    
+    
+    
+    ; Turns on leds based on latest colour register
+    BTFSC   LLI_OUTPUT,0,a
+    CALL    SSD_DISPLAY_ERROR
+    
+    BTFSC   LLI_OUTPUT,1,a
+    CALL    SSD_DISPLAY_STOP
+    
+    BTFSC   LLI_OUTPUT,2,a
+    CALL    SSD_DISPLAY_STRAIGHT
+    
+    BTFSC   LLI_OUTPUT,3,a
+    CALL    SSD_DISPLAY_RIGHT
+    
+    BTFSC   LLI_OUTPUT,4,a
+    CALL    SSD_DISPLAY_LEFT
+    
+   
+    RETURN
+; //</editor-fold>
+    
+
+;-----------------------------------------------------------------------------
+; Displays Colour Detection
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DISPLAY_CD:
+    
+    ; *Assumes the S1 colour register has the latest readings
+    
+
+    
+    
+    ; Turns on leds based on latest colour register
+    BTFSC   S1_COLOUR,0,a
+    CALL    SSD_DISPLAY_BLACK
+    
+    BTFSC   S1_COLOUR,1,a
+    CALL    SSD_DISPLAY_BLUE
+    
+    BTFSC   S1_COLOUR,2,a
+    CALL    SSD_DISPLAY_GREEN
+    
+    BTFSC   S1_COLOUR,3,a
+    CALL    SSD_DISPLAY_RED
+    
+    BTFSC   S1_COLOUR,4,a
+    CALL    SSD_DISPLAY_WHITE
+   
+    RETURN
+; //</editor-fold>
+     
+; //</editor-fold>     
+
+
+    
+
+
+    
+;#############################################################################
+; MOTOR CONTROL (PWM)
+;############################################################################# 
+; //<editor-fold defaultstate="collapsed">
+   
+    
+;-----------------------------------------------------------------------------
+; UPDATE MOTOR CONTROL
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+UPDATE_MOTOR_CONTROL:
+    
+    
+    ; b7-5=Unused, b4=Left, b3=Right, b2=Straight, b1=Stop, b0=Error
+    
+    ; Checks LLI for STOP condition
+    MOVLW   00000010B
+    CPFSEQ  LLI_OUTPUT,a
+    BRA	    MC_CHECK_1
+    CALL    MOTORS_STOP  
+    RETURN
+    
+MC_CHECK_1:
+    
+    ; Checks LLI for STRAIGHT condition
+    MOVLW   00000100B
+    CPFSEQ  LLI_OUTPUT,a
+    BRA	    MC_CHECK_2
+    CALL    MOTORS_STRAIGHT 
+    RETURN
+MC_CHECK_2: 
+    
+    ; Checks LLI for LEFT condition
+    MOVLW   00001000B
+    CPFSEQ  LLI_OUTPUT,a
+    BRA	    MC_CHECK_3
+    CALL    MOTORS_LEFT 
+    RETURN
+MC_CHECK_3: 
+    
+    ; Checks LLI for RIGHT condition
+    MOVLW   00010000B
+    CPFSEQ  LLI_OUTPUT,a
+    BRA	    MC_CHECK_4
+    CALL    MOTORS_RIGHT
+    RETURN
+    
+MC_CHECK_4: 
+    ; Checks LLI for ERROR condition
+    CALL    MOTORS_ERROR
+    RETURN
+; //</editor-fold>    
+    
+    
+;-----------------------------------------------------------------------------
+; STRAIGHT MOTOR CONTROL
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+MOTORS_STRAIGHT:
+    
+    MOVLW   10
+    MOVWF   CCPR1L,a
+    MOVWF   CCPR2L,a
+    
+    RETURN
+; //</editor-fold>
+    
+;-----------------------------------------------------------------------------
+; STOP MOTOR CONTROL
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+MOTORS_STOP:
+    
+    MOVLW   0
+    MOVWF   CCPR1L,b
+    MOVWF   CCPR2L,b
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; LEFT MOTOR CONTROL
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+MOTORS_LEFT:
+    
+    MOVLW   0
+    MOVWF   CCPR1L,b
+    MOVLW   5
+    MOVWF   CCPR2L,b
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; RIGHT MOTOR CONTROL
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+MOTORS_RIGHT:
+    
+    MOVLW   5
+    MOVWF   CCPR1L,b
+    MOVLW   0
+    MOVWF   CCPR2L,b
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; ERROR MOTOR CONTROL
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+MOTORS_ERROR:
+    
+    MOVLW   10
+    MOVWF   CCPR1L,b
+    MOVWF   CCPR2L,b
+    
+    RETURN
+; //</editor-fold>
+    
+; //</editor-fold>
+
+
+
+    
+    
+    
+;#############################################################################
+; COLOUR DETECTION
+;############################################################################# 
+; //<editor-fold defaultstate="collapsed">
+
+;-----------------------------------------------------------------------------
+; Update Sensor Colour Registers
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+UPDATE_CD:
+    
+    ; *Assumes sensor has already been calibrated
+    
+    ; Strobes and retrieves latest sensor readings
+    CALL    GET_STROBE_READINGS
+    
+    ; Updates colour registers for all three sensors 
+    CALL    DETECT_COLOUR_S0
+    CALL    DETECT_COLOUR_S1
+    CALL    DETECT_COLOUR_S2
+    
+    RETURN
+; //</editor-fold>  
+    
+   
+;-----------------------------------------------------------------------------
+; Sensor 0 Colour Detection
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DETECT_COLOUR_S0:
+    
+    ; *Assumes sensor has already been calibrated and strobed
+    
+    
+    CLRF    S0_COLOUR,a			; Empties sensor colour register
+    CLRF    S0_STROBE_REG,a		; Empties strobe register
+   
+    
+    
+    ; Checks if red is a high
+    MOVFF   S0_RED_READING, WREG
+    CPFSGT  S0_RED_THRESH,a
+    BSF	    S0_STROBE_REG,2,a	
+    
+   
+    
+    ; Checks if GREEN is a high
+    MOVFF   S0_GREEN_READING, WREG
+    CPFSGT  S0_GREEN_THRESH,a
+    BSF	    S0_STROBE_REG,1,a	
+    
+    ; Checks if BLUE is a high
+    MOVFF   S0_BLUE_READING, WREG
+    CPFSGT  S0_BLUE_THRESH,a
+    BSF	    S0_STROBE_REG,0,a	
+    
+    
+    ; Checks register conditions to set colour
+    MOVLW   00000000B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_1
+    BSF	    S0_COLOUR,0,a   ;Sets to black
+CD_S0_CHECK_1:
+    
+    MOVLW   00000001B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_2
+    BSF	    S0_COLOUR,1,a   ;Sets to blue
+CD_S0_CHECK_2: 
+    
+    
+    MOVLW   00000010B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_3
+    BSF	    S0_COLOUR,2,a   ;Sets to green
+CD_S0_CHECK_3: 
+    
+    MOVLW   00000011B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_4
+    BSF	    S0_COLOUR,1,a   ;Sets to blue
+CD_S0_CHECK_4: 
+    
+    MOVLW   00000100B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_5
+    BSF	    S0_COLOUR,3,a   ;Sets to red
+CD_S0_CHECK_5: 
+    
+    MOVLW   00000101B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_6
+    BSF	    S0_COLOUR,3,a   ;Sets to blue
+CD_S0_CHECK_6: 
+    
+    MOVLW   00000110B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_7
+    BSF	    S0_COLOUR,2,a   ;Sets to green
+CD_S0_CHECK_7: 
+    
+    MOVLW   00000111B
+    CPFSEQ  S0_STROBE_REG,a
+    BRA	    CD_S0_CHECK_8
+    BSF	    S0_COLOUR,4,a   ;Sets to white
+CD_S0_CHECK_8: 
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Sensor 1 Colour Detection
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DETECT_COLOUR_S1:
+    
+    ; *Assumes sensor has already been calibrated and strobed
+    
+    
+    CLRF    S1_COLOUR,a		    ; Empties sensor colour register
+    CLRF    S1_STROBE_REG,a		; Empties strobe register
+   
+    ; Checks if red is a high
+    MOVFF   S1_RED_READING, WREG
+    CPFSGT  S1_RED_THRESH,a
+    BSF	    S1_STROBE_REG,2,a	   
+    
+    ; Checks if GREEN is a high
+    MOVFF   S1_GREEN_READING, WREG
+    CPFSGT  S1_GREEN_THRESH,a
+    BSF	    S1_STROBE_REG,1,a	
+    
+    ; Checks if BLUE is a high
+    MOVFF   S1_BLUE_READING, WREG
+    CPFSGT  S1_BLUE_THRESH,a
+    BSF	    S1_STROBE_REG,0,a	
+    
+    
+    ; Checks register conditions to set colour
+    MOVLW   00000000B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_1
+    BSF	    S1_COLOUR,0,a   ;Sets to black
+CD_S1_CHECK_1:
+    
+    MOVLW   00000001B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_2
+    BSF	    S1_COLOUR,1,a   ;Sets to blue
+CD_S1_CHECK_2: 
+    
+    
+    MOVLW   00000010B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_3
+    BSF	    S1_COLOUR,2,a   ;Sets to green
+CD_S1_CHECK_3: 
+    
+    MOVLW   00000011B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_4
+    BSF	    S1_COLOUR,1,a   ;Sets to blue
+CD_S1_CHECK_4: 
+    
+    MOVLW   00000100B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_5
+    BSF	    S1_COLOUR,3,a   ;Sets to red
+CD_S1_CHECK_5: 
+    
+    MOVLW   00000101B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_6
+    BSF	    S1_COLOUR,3,a   ;Sets to blue
+CD_S1_CHECK_6: 
+    
+    MOVLW   00000110B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_7
+    BSF	    S1_COLOUR,2,a   ;Sets to green
+CD_S1_CHECK_7: 
+    
+    MOVLW   00000111B
+    CPFSEQ  S1_STROBE_REG,a
+    BRA	    CD_S1_CHECK_8
+    BSF	    S1_COLOUR,4,a   ;Sets to white
+CD_S1_CHECK_8: 
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Sensor 2 Colour Detection
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+DETECT_COLOUR_S2:
+    
+    ; *Assumes sensor has already been calibrated and strobed
+    
+    
+    CLRF    S2_COLOUR,a		    ; Empties sensor colour register
+    CLRF    S2_STROBE_REG,a		; Empties strobe register
+   
+    ; Checks if red is a high
+    MOVFF   S2_RED_READING, WREG
+    CPFSGT  S2_RED_THRESH,a
+    BSF	    S2_STROBE_REG,2,a	   
+    
+    ; Checks if GREEN is a high
+    MOVFF   S2_GREEN_READING, WREG
+    CPFSGT  S2_GREEN_THRESH,a
+    BSF	    S2_STROBE_REG,1,a	
+    
+    ; Checks if BLUE is a high
+    MOVFF   S2_BLUE_READING, WREG
+    CPFSGT  S2_BLUE_THRESH,a
+    BSF	    S2_STROBE_REG,0,a	
+    
+    
+    ; Checks register conditions to set colour
+    MOVLW   00000000B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_1
+    BSF	    S2_COLOUR,0,a   ;Sets to black
+CD_S2_CHECK_1:
+    
+    MOVLW   00000001B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_2
+    BSF	    S2_COLOUR,1,a   ;Sets to blue
+CD_S2_CHECK_2: 
+    
+    
+    MOVLW   00000010B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_3
+    BSF	    S2_COLOUR,2,a   ;Sets to green
+CD_S2_CHECK_3: 
+    
+    MOVLW   00000011B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_4
+    BSF	    S2_COLOUR,1,a   ;Sets to blue
+CD_S2_CHECK_4: 
+    
+    MOVLW   00000100B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_5
+    BSF	    S2_COLOUR,3,a   ;Sets to red
+CD_S2_CHECK_5: 
+    
+    MOVLW   00000101B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_6
+    BSF	    S2_COLOUR,3,a   ;Sets to blue
+CD_S2_CHECK_6: 
+    
+    MOVLW   00000110B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_7
+    BSF	    S2_COLOUR,2,a   ;Sets to green
+CD_S2_CHECK_7: 
+    
+    MOVLW   00000111B
+    CPFSEQ  S2_STROBE_REG,a
+    BRA	    CD_S2_CHECK_8
+    BSF	    S2_COLOUR,4,a   ;Sets to white
+CD_S2_CHECK_8: 
+    
+    RETURN
+; //</editor-fold>
+       
+; //</editor-fold>
+    
+;#############################################################################
+; LINE LOCATION INTERPRETER (LLI)
+;#############################################################################     
+; //<editor-fold defaultstate="collapsed">
+   
+   
+;-----------------------------------------------------------------------------
+; Updates LLI
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+UPDATE_LLI:
+    
+    ; Assumes the colour detection system is calibrated and fully functional,
+    ; and that sensor reading registers are the latest
+    
+    
+    CLRF    LLI_OUTPUT,a	    ; Clears the LLI register
+    
+    ; Checks if LLI Stop condition is met 
+    CALL    LLI_CHECK_STOP
+    TSTFSZ  LLI_OUTPUT,a	    ; Ends if LLI output register is not 0/empty
+    BRA	    LLI_END
+    
+    ; Checks if LLI Straight condition is met 
+    CALL    LLI_CHECK_STRAIGHT
+    TSTFSZ  LLI_OUTPUT,a
+    BRA	    LLI_END
+    
+    ; Checks if LLI Left condition is met 
+    CALL    LLI_CHECK_LEFT
+    TSTFSZ  LLI_OUTPUT,a
+    BRA	    LLI_END
+    
+    ; Checks if LLI Right condition is met 
+    CALL    LLI_CHECK_RIGHT
+    TSTFSZ  LLI_OUTPUT,a
+    BRA	    LLI_END
+    
+    
+    ; Sets LLI output to error if no other conditions are met 
+    BSF	    LLI_OUTPUT,0,a
+    
+LLI_END:   
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Check Straight
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+LLI_CHECK_STRAIGHT:
+    
+    ; Assumed positive flag(APF), which is then turned off if a required 
+    ; condition is not met.
+    BSF	    APF,0,a
+    
+    
+    ; Move race_colour into WREG to use compare directives
+    MOVFF   RACE_COLOUR,WREG	
+    
+    
+    ; Checks if S0 and S2 are not the racecolour and S1 is the race colour,
+    ; if not turns off APF flag.
+    CPFSEQ  S0_COLOUR,a
+    BRA	    LLI_ST_CHECK_1
+    BCF	    APF,0,a
+    
+LLI_ST_CHECK_1:  
+    
+    
+    CPFSEQ  S1_COLOUR,a
+    BCF	    APF,0,a
+    
+    
+    
+    CPFSEQ  S2_COLOUR,a
+    BRA	    LLI_ST_CHECK_2
+    BCF	    APF,0,a
+    
+LLI_ST_CHECK_2: 
+    
+    ; Sets LLI as straight if APF is proven true.
+    BTFSC   APF,0,a	    
+    BSF	    LLI_OUTPUT,2,a
+    CLRF    APF,a
+    
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Check Stop
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+LLI_CHECK_STOP:
+    
+    ; Assumed positive flag(APF), which is then turned off if a required 
+    ; condition is not met.
+    BSF	    APF,0,a
+    
+    
+    ; Checks if all sensors are black, if not turns off APF flag.
+    BTFSS   S0_COLOUR,0,a
+    BCF	    APF,0,a
+    
+    BTFSS   S1_COLOUR,0,a
+    BCF	    APF,0,a
+    
+    BTFSS   S2_COLOUR,0,a
+    BCF	    APF,0,a
+    
+    
+    ; Sets LLI as straight if APF is proven true.
+    BTFSC   APF,0,a	    
+    BSF	    LLI_OUTPUT,1,a
+    CLRF    APF,a
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Check Left
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+LLI_CHECK_LEFT:
+    
+    
+    ; Assumed positive flag(APF), which is then turned off if a required 
+    ; condition is not met.
+    BSF	    APF,0,a
+    
+    
+    ; Move race_colour into WREG to use compare directives
+    MOVFF   RACE_COLOUR,WREG	
+    
+    
+    ; Checks if S0 IS not the racecolour and S2 is the race colour,
+    ; if not turns off APF flag.
+    CPFSEQ  S0_COLOUR,a
+    BCF	    APF,0,a
+    
+    
+    CPFSEQ  S2_COLOUR,a
+    BRA	    LLI_LEFT_CHECK
+    BCF	    APF,0,a
+
+LLI_LEFT_CHECK:
+    
+    ; Sets LLI as left if APF is proven true.
+    BTFSC   APF,0,a	    
+    BSF	    LLI_OUTPUT,4,a
+    CLRF    APF,a
+    
+    
+    RETURN
+; //</editor-fold>
+    
+    
+;-----------------------------------------------------------------------------
+; Check Right
+;-----------------------------------------------------------------------------
+; //<editor-fold defaultstate="collapsed">
+LLI_CHECK_RIGHT:
+    
+    ; Assumed positive flag(APF), which is then turned off if a required 
+    ; condition is not met.
+    BSF	    APF,0,a
+    
+    
+    ; Move race_colour into WREG to use compare directives
+    MOVFF   RACE_COLOUR,WREG	
+    
+    
+    ; Checks if S2 IS not the racecolour and S0 is the race colour,
+    ; if not turns off APF flag.
+    CPFSEQ  S0_COLOUR,a
+    BRA	    LLI_RIGHT_CHECK
+    BCF	    APF,0,a
+    
+LLI_RIGHT_CHECK:  
+    
+    
+    CPFSEQ  S2_COLOUR,a
+    BCF	    APF,0,a
+    
+    
+    ; Sets LLI as right if APF is proven true.
+    BTFSC   APF,0,a	    
+    BSF	    LLI_OUTPUT,3,a
+    CLRF    APF,a
+    
+    
+    
+    
+    
+    RETURN
+; //</editor-fold>
+    
+    
+    
+    
+; //</editor-fold> 
+
+    
+    
+    
+    
+    
+    
+
+     
+    
+END		; End of the program
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
